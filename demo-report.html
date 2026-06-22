@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Review — demo-codebase/feature/user-auth</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e4e6eb;
+    --text-dim: #8b8fa3;
+    --accent: #6366f1;
+    --critical: #dc2626;
+    --warning: #d97706;
+    --suggestion: #2563eb;
+    --praise: #16a34a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 24px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  /* ─── Header ─── */
+  .header {
+    background: linear-gradient(135deg, #1a1d27 0%, #252836 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; }
+  .header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+  .header .repo-url { color: var(--text-dim); font-size: 13px; font-family: 'SF Mono', monospace; word-break: break-all; }
+  .header-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .meta-tag {
+    background: rgba(99,102,241,0.1);
+    border: 1px solid rgba(99,102,241,0.3);
+    color: var(--accent);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* ─── Health Score ─── */
+  .health-score {
+    text-align: center;
+    min-width: 140px;
+  }
+  .health-circle {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    border: 4px solid #dc2626;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 8px;
+    font-size: 28px; font-weight: 800;
+    color: #dc2626;
+    background: rgba(255,255,255,0.02);
+  }
+  .health-label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ─── Stats Grid ─── */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .stat-card .stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 8px; }
+  .stat-card .stat-value { font-size: 32px; font-weight: 800; }
+  .stat-card.critical .stat-value { color: var(--critical); }
+  .stat-card.warning .stat-value { color: var(--warning); }
+  .stat-card.suggestion .stat-value { color: var(--suggestion); }
+  .stat-card.praise .stat-value { color: var(--praise); }
+
+  /* ─── Severity Bar ─── */
+  .severity-bar-container { margin-bottom: 24px; }
+  .severity-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--border);
+  }
+  .severity-bar-segment { transition: width 0.3s; }
+  .severity-bar-legend { display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-dim); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* ─── Commits ─── */
+  .commits-section { margin-bottom: 24px; }
+  .section-title { font-size: 18px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .commit-list { list-style: none; }
+  .commit-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .commit-hash { color: var(--accent); font-weight: 600; }
+
+  /* ─── Diff Stats ─── */
+  .diff-stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 24px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    color: var(--text-dim);
+    overflow-x: auto;
+  }
+
+  /* ─── Findings ─── */
+  .findings-section { margin-bottom: 32px; }
+  .file-group { margin-bottom: 28px; }
+  .file-header {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 10px 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px 8px 0 0;
+    border-bottom: 2px solid var(--accent);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .file-badge {
+    background: rgba(99,102,241,0.15);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+  .finding {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 0;
+  }
+  .finding:last-child { border-radius: 0 0 8px 8px; }
+  .finding-header {
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 10px;
+    border-left: 4px solid;
+    flex-wrap: wrap;
+  }
+  .severity-badge {
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .finding-line {
+    font-family: 'SF Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .finding-category {
+    background: rgba(255,255,255,0.06);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .finding-title { font-weight: 600; font-size: 14px; }
+  .finding-body { padding: 0 16px 14px 20px; }
+  .finding-description { color: var(--text-dim); font-size: 13px; margin-bottom: 10px; line-height: 1.7; }
+  .finding-suggestion {
+    background: rgba(0,0,0,0.25);
+    border-radius: 6px;
+    padding: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    border-left: 3px solid var(--accent);
+    color: #b8bccc;
+  }
+  .suggestion-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 6px; font-weight: 600; }
+
+  /* ─── Footer ─── */
+  .footer {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-dim);
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+
+  /* ─── Changed files list ─── */
+  .files-list {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 24px;
+  }
+  .file-chip {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'SF Mono', monospace;
+    color: var(--text-dim);
+  }
+
+  /* ─── Empty state ─── */
+  .empty-state {
+    text-align: center;
+    padding: 48px;
+    color: var(--text-dim);
+  }
+  .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ─── Header ─── -->
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>🤖 AI Code Review Report</h1>
+        <div class="repo-url">local</div>
+        <div class="header-meta">
+          <span class="meta-tag">📂 demo-codebase</span>
+          <span class="meta-tag">🌿 feature/user-auth</span>
+          <span class="meta-tag">⬅️ main</span>
+          <span class="meta-tag">👤 Demo Dev</span>
+        </div>
+      </div>
+      <div class="health-score">
+        <div class="health-circle">0</div>
+        <div class="health-label">At Risk 🔴</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Stats Grid ─── -->
+  <div class="stats-grid">
+    <div class="stat-card critical">
+      <div class="stat-label">🔴 Critical</div>
+      <div class="stat-value">17</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-label">🟡 Warnings</div>
+      <div class="stat-value">5</div>
+    </div>
+    <div class="stat-card suggestion">
+      <div class="stat-label">🔵 Suggestions</div>
+      <div class="stat-value">2</div>
+    </div>
+    <div class="stat-card praise">
+      <div class="stat-label">🟢 Praise</div>
+      <div class="stat-value">0</div>
+    </div>
+  </div>
+
+  <!-- ─── Severity Bar ─── -->
+  
+  <div class="severity-bar-container">
+    <div class="severity-bar">
+      
+      <div class="severity-bar-segment" style="width: 71.0%; background: var(--critical);"></div>
+      <div class="severity-bar-segment" style="width: 21.0%; background: var(--warning);"></div>
+      <div class="severity-bar-segment" style="width: 8.0%; background: var(--suggestion);"></div>
+      
+    </div>
+    <div class="severity-bar-legend">
+      
+      <div class="legend-item">
+        <div class="legend-dot" style="background: #dc2626;"></div>
+        Critical (17)
+      </div>
+      
+      <div class="legend-item">
+        <div class="legend-dot" style="background: #d97706;"></div>
+        Warning (5)
+      </div>
+      
+      <div class="legend-item">
+        <div class="legend-dot" style="background: #2563eb;"></div>
+        Suggestion (2)
+      </div>
+      
+      <div class="legend-item">
+        <div class="legend-dot" style="background: #16a34a;"></div>
+        Good Practice (0)
+      </div>
+      
+    </div>
+  </div>
+  
+
+  <!-- ─── Changed Files ─── -->
+  
+  <div class="section-title">📄 Changed Files (2)</div>
+  <div class="files-list">
+    
+    <div class="file-chip">api.py</div>
+    
+    <div class="file-chip">auth.py</div>
+    
+  </div>
+  
+
+  <!-- ─── Commits ─── -->
+  
+  <div class="commits-section">
+    <div class="section-title">📝 Commits (1)</div>
+    <ul class="commit-list">
+      
+      <li class="commit-item">
+        <span class="commit-hash">e0d8956</span>
+        <span>feat: add user authentication and API endpoints</span>
+      </li>
+      
+    </ul>
+  </div>
+  
+
+  <!-- ─── Diff Stat ─── -->
+  
+  <div class="section-title">📊 Diff Summary</div>
+  <div class="diff-stat">api.py  |  97 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ auth.py | 108 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 205 insertions(+)</div>
+  
+
+  <!-- ─── Findings by File ─── -->
+  <div class="findings-section">
+    <div class="section-title">🔍 Review Findings</div>
+
+    
+
+    
+    <div class="file-group">
+      <div class="file-header">
+        <span>📄</span>
+        <span>api.py</span>
+        <span class="file-badge">10 issues</span>
+      </div>
+
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">bug</span>
+          <span class="finding-line">Line 17</span>
+          <span class="finding-title">Missing input validation causes KeyError exception</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">Direct access to request.json keys without validation will raise KeyError if the keys are missing, causing the application to crash. This is a critical bug that makes the endpoint unusable.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Add input validation: if not data or &#39;username&#39; not in data or &#39;password&#39; not in data: return jsonify({&#39;error&#39;: &#39;Missing required fields&#39;}), 400</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 30</span>
+          <span class="finding-title">Password hash leaked in API response</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">The API response includes the user&#39;s password hash (user[2]), which is a critical security vulnerability. Password hashes should never be exposed to clients as they can be used for credential stuffing or rainbow table attacks.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Remove the password field from the response: remove the line &#39;&#34;password&#34;: user[2],&#39;</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">bug</span>
+          <span class="finding-line">Line 43-46</span>
+          <span class="finding-title">Missing input validation in register endpoint</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">Direct access to data keys without validation will cause KeyError exceptions when required fields are missing, making the endpoint crash.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Add validation: required_fields = [&#39;username&#39;, &#39;password&#39;, &#39;email&#39;]; if not all(field in data for field in required_fields): return error response</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 57</span>
+          <span class="finding-title">Full stack trace exposed to clients</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">Returning the full traceback to clients exposes internal application structure, file paths, and potentially sensitive information to attackers.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Remove traceback exposure: return jsonify({&#39;status&#39;: &#39;error&#39;, &#39;message&#39;: &#39;Internal server error&#39;}), 500 and log the full error server-side</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 64</span>
+          <span class="finding-title">Missing authentication and authorization</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">The get_user endpoint has no authentication check, allowing anyone to access any user&#39;s data by guessing user IDs.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Add authentication decorator or middleware to verify the user is logged in and authorized to access the requested user data</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 76</span>
+          <span class="finding-title">Missing authorization in email update</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">Anyone can change anyone else&#39;s email address without authentication, which is a critical security flaw that could lead to account takeover.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Add authentication and ensure the authenticated user can only update their own email: verify user_id matches the authenticated user&#39;s ID</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">bug</span>
+          <span class="finding-line">Line 79</span>
+          <span class="finding-title">Missing input validation for email update</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">Direct access to data[&#39;email&#39;] without validation will cause KeyError if the email field is missing.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Add validation: if &#39;email&#39; not in data: return jsonify({&#39;error&#39;: &#39;Email field required&#39;}), 400</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 96</span>
+          <span class="finding-title">Debug mode enabled in production</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">Running Flask with debug=True in production exposes the interactive debugger to the public internet, allowing arbitrary code execution.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Remove debug=True or use environment variable: app.run(host=&#39;0.0.0.0&#39;, port=5000, debug=os.getenv(&#39;FLASK_DEBUG&#39;, False))</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #d97706;">
+          <span class="severity-badge" style="background: #d97706; color: white;">🟡 Warning</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 33</span>
+          <span class="finding-title">User enumeration vulnerability</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">The error message &#39;Invalid password&#39; reveals that the username exists, allowing attackers to enumerate valid usernames by observing different error responses.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Use a generic error message: return jsonify({&#39;status&#39;: &#39;error&#39;, &#39;message&#39;: &#39;Invalid credentials&#39;}), 401</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #2563eb;">
+          <span class="severity-badge" style="background: #2563eb; color: white;">🔵 Suggestion</span>
+          <span class="finding-category">style</span>
+          <span class="finding-line">Line 89</span>
+          <span class="finding-title">Inconsistent response format</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">The health endpoint returns a plain string while all other endpoints return JSON objects, creating inconsistency in the API design.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Return JSON format for consistency: return jsonify({&#39;status&#39;: &#39;ok&#39;, &#39;message&#39;: &#39;healthy&#39;})</div>
+          
+        </div>
+      </div>
+      
+    </div>
+    
+    <div class="file-group">
+      <div class="file-header">
+        <span>📄</span>
+        <span>auth.py</span>
+        <span class="file-badge">14 issues</span>
+      </div>
+
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 21</span>
+          <span class="finding-title">SQL injection vulnerability in create_user</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">Using f-string formatting to build SQL queries allows attackers to inject malicious SQL code, potentially leading to data theft, modification, or database compromise.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Use parameterized queries: cursor.execute(&#39;INSERT INTO users (username, password, email) VALUES (?, ?, ?)&#39;, (username, password, email))</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 21</span>
+          <span class="finding-title">Plain text password storage</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">Storing passwords in plain text is a critical security vulnerability. If the database is compromised, all user passwords are immediately exposed.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Hash passwords before storage: hashed_password = bcrypt.hashpw(password.encode(&#39;utf-8&#39;), bcrypt.gensalt())</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 35</span>
+          <span class="finding-title">SQL injection in authenticate function</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">String concatenation to build SQL queries allows SQL injection attacks, enabling attackers to bypass authentication or extract data.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Use parameterized queries: cursor.execute(&#39;SELECT * FROM users WHERE username = ? AND password = ?&#39;, (username, password))</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 50</span>
+          <span class="finding-title">MD5 used for password hashing</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">MD5 is cryptographically broken and unsuitable for password hashing. It&#39;s vulnerable to collision attacks and rainbow table attacks.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Use bcrypt, scrypt, or argon2: import bcrypt; return bcrypt.hashpw(password.encode(&#39;utf-8&#39;), bcrypt.gensalt())</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 56</span>
+          <span class="finding-title">Predictable password reset tokens</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">Using hash(email) creates predictable tokens that attackers can easily generate, allowing unauthorized password resets.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Use cryptographically secure random tokens: import secrets; token = secrets.token_urlsafe(32)</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 61</span>
+          <span class="finding-title">Hardcoded email credentials</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">Hardcoded email credentials in source code are a critical security risk, especially when committed to version control.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Use environment variables: username = os.getenv(&#39;EMAIL_USERNAME&#39;); password = os.getenv(&#39;EMAIL_PASSWORD&#39;)</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 73</span>
+          <span class="finding-title">SQL injection in get_user_data</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">Using f-string formatting for user_id allows SQL injection attacks, potentially exposing all user data.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Use parameterized query: cursor.execute(&#39;SELECT * FROM users WHERE id = ?&#39;, (user_id,))</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 86</span>
+          <span class="finding-title">SQL injection in update_email</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">Using f-string formatting allows SQL injection attacks in the email update functionality.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Use parameterized query: cursor.execute(&#39;UPDATE users SET email = ? WHERE id = ?&#39;, (new_email, user_id))</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #dc2626;">
+          <span class="severity-badge" style="background: #dc2626; color: white;">🔴 Critical</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 100</span>
+          <span class="finding-title">SQL injection in delete_user</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">Using f-string formatting allows SQL injection attacks in the user deletion functionality.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Use parameterized query: cursor.execute(&#39;DELETE FROM users WHERE username = ?&#39;, (username,))</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #d97706;">
+          <span class="severity-badge" style="background: #d97706; color: white;">🟡 Warning</span>
+          <span class="finding-category">bug</span>
+          <span class="finding-line">Line 40-41</span>
+          <span class="finding-title">Database connection not closed on error path</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">If user is None, the function returns False without closing the database connection, leading to connection leaks.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Add try/finally block or use context manager: try: ... finally: conn.close()</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #d97706;">
+          <span class="severity-badge" style="background: #d97706; color: white;">🟡 Warning</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 76</span>
+          <span class="finding-title">Returning sensitive data including password</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">The function returns all columns including password hashes, which should not be exposed even internally without explicit need.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Select specific columns: cursor.execute(&#39;SELECT id, username, email FROM users WHERE id = ?&#39;, (user_id,))</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #d97706;">
+          <span class="severity-badge" style="background: #d97706; color: white;">🟡 Warning</span>
+          <span class="finding-category">bug</span>
+          <span class="finding-line">Line 85-86</span>
+          <span class="finding-title">Missing email validation and verification</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">The function updates email without validating the format or verifying ownership, which could lead to account takeover or invalid data.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Add email format validation and send verification email before updating</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #d97706;">
+          <span class="severity-badge" style="background: #d97706; color: white;">🟡 Warning</span>
+          <span class="finding-category">security</span>
+          <span class="finding-line">Line 98-103</span>
+          <span class="finding-title">Missing authorization check for user deletion</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">The delete_user function has no authorization check, allowing anyone who can call it to delete any user account.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Add authorization check to ensure only admins or the user themselves can delete accounts</div>
+          
+        </div>
+      </div>
+      
+      
+      
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: #2563eb;">
+          <span class="severity-badge" style="background: #2563eb; color: white;">🔵 Suggestion</span>
+          <span class="finding-category">maintainability</span>
+          <span class="finding-line">Line 106</span>
+          <span class="finding-title">No soft delete or confirmation mechanism</span>
+        </div>
+        <div class="finding-body">
+          
+          <div class="finding-description">Hard deletion without confirmation or soft delete makes account recovery impossible and could lead to accidental data loss.</div>
+          
+          
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">Implement soft delete by adding a &#39;deleted_at&#39; timestamp column or require explicit confirmation parameter</div>
+          
+        </div>
+      </div>
+      
+    </div>
+    
+
+    
+  </div>
+
+  <!-- ─── Footer ─── -->
+  <div class="footer">
+    <p>Generated by <strong>OpenCode Review Bot</strong> on 2026-06-22 21:25:03</p>
+    <p>Powered by <a href="https://opencode.ai">OpenCode AI</a> · Model: <code>default</code></p>
+  </div>
+
+</div>
+</body>
+</html>

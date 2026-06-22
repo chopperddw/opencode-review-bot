@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Review — {{ repo_info.name }}/{{ target_branch }}</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e4e6eb;
+    --text-dim: #8b8fa3;
+    --accent: #6366f1;
+    --critical: #dc2626;
+    --warning: #d97706;
+    --suggestion: #2563eb;
+    --praise: #16a34a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 24px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  /* ─── Header ─── */
+  .header {
+    background: linear-gradient(135deg, #1a1d27 0%, #252836 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; }
+  .header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+  .header .repo-url { color: var(--text-dim); font-size: 13px; font-family: 'SF Mono', monospace; word-break: break-all; }
+  .header-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .meta-tag {
+    background: rgba(99,102,241,0.1);
+    border: 1px solid rgba(99,102,241,0.3);
+    color: var(--accent);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* ─── Health Score ─── */
+  .health-score {
+    text-align: center;
+    min-width: 140px;
+  }
+  .health-circle {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    border: 4px solid {{ health_color }};
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 8px;
+    font-size: 28px; font-weight: 800;
+    color: {{ health_color }};
+    background: rgba(255,255,255,0.02);
+  }
+  .health-label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ─── Stats Grid ─── */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .stat-card .stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 8px; }
+  .stat-card .stat-value { font-size: 32px; font-weight: 800; }
+  .stat-card.critical .stat-value { color: var(--critical); }
+  .stat-card.warning .stat-value { color: var(--warning); }
+  .stat-card.suggestion .stat-value { color: var(--suggestion); }
+  .stat-card.praise .stat-value { color: var(--praise); }
+
+  /* ─── Severity Bar ─── */
+  .severity-bar-container { margin-bottom: 24px; }
+  .severity-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--border);
+  }
+  .severity-bar-segment { transition: width 0.3s; }
+  .severity-bar-legend { display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-dim); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* ─── Commits ─── */
+  .commits-section { margin-bottom: 24px; }
+  .section-title { font-size: 18px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .commit-list { list-style: none; }
+  .commit-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .commit-hash { color: var(--accent); font-weight: 600; }
+
+  /* ─── Diff Stats ─── */
+  .diff-stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 24px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    color: var(--text-dim);
+    overflow-x: auto;
+  }
+
+  /* ─── Findings ─── */
+  .findings-section { margin-bottom: 32px; }
+  .file-group { margin-bottom: 28px; }
+  .file-header {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 10px 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px 8px 0 0;
+    border-bottom: 2px solid var(--accent);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .file-badge {
+    background: rgba(99,102,241,0.15);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+  .finding {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 0;
+  }
+  .finding:last-child { border-radius: 0 0 8px 8px; }
+  .finding-header {
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 10px;
+    border-left: 4px solid;
+    flex-wrap: wrap;
+  }
+  .severity-badge {
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .finding-line {
+    font-family: 'SF Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .finding-category {
+    background: rgba(255,255,255,0.06);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .finding-title { font-weight: 600; font-size: 14px; }
+  .finding-body { padding: 0 16px 14px 20px; }
+  .finding-description { color: var(--text-dim); font-size: 13px; margin-bottom: 10px; line-height: 1.7; }
+  .finding-suggestion {
+    background: rgba(0,0,0,0.25);
+    border-radius: 6px;
+    padding: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    border-left: 3px solid var(--accent);
+    color: #b8bccc;
+  }
+  .suggestion-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 6px; font-weight: 600; }
+
+  /* ─── Footer ─── */
+  .footer {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-dim);
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+
+  /* ─── Changed files list ─── */
+  .files-list {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 24px;
+  }
+  .file-chip {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'SF Mono', monospace;
+    color: var(--text-dim);
+  }
+
+  /* ─── Empty state ─── */
+  .empty-state {
+    text-align: center;
+    padding: 48px;
+    color: var(--text-dim);
+  }
+  .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ─── Header ─── -->
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>🤖 AI Code Review Report</h1>
+        <div class="repo-url">{{ repo_info.url }}</div>
+        <div class="header-meta">
+          <span class="meta-tag">📂 {{ repo_info.name }}</span>
+          <span class="meta-tag">🌿 {{ target_branch }}</span>
+          <span class="meta-tag">⬅️ {{ base_branch }}</span>
+          {% if repo_info.author %}<span class="meta-tag">👤 {{ repo_info.author }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="health-score">
+        <div class="health-circle">{{ health_score }}</div>
+        <div class="health-label">{{ health_label }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Stats Grid ─── -->
+  <div class="stats-grid">
+    <div class="stat-card critical">
+      <div class="stat-label">🔴 Critical</div>
+      <div class="stat-value">{{ by_severity.critical | length }}</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-label">🟡 Warnings</div>
+      <div class="stat-value">{{ by_severity.warning | length }}</div>
+    </div>
+    <div class="stat-card suggestion">
+      <div class="stat-label">🔵 Suggestions</div>
+      <div class="stat-value">{{ by_severity.suggestion | length }}</div>
+    </div>
+    <div class="stat-card praise">
+      <div class="stat-label">🟢 Praise</div>
+      <div class="stat-value">{{ by_severity.praise | length }}</div>
+    </div>
+  </div>
+
+  <!-- ─── Severity Bar ─── -->
+  {% if total_findings > 0 %}
+  <div class="severity-bar-container">
+    <div class="severity-bar">
+      {% set total = total_findings %}
+      {% if by_severity.critical %}<div class="severity-bar-segment" style="width: {{ (by_severity.critical|length / total * 100)|round }}%; background: var(--critical);"></div>{% endif %}
+      {% if by_severity.warning %}<div class="severity-bar-segment" style="width: {{ (by_severity.warning|length / total * 100)|round }}%; background: var(--warning);"></div>{% endif %}
+      {% if by_severity.suggestion %}<div class="severity-bar-segment" style="width: {{ (by_severity.suggestion|length / total * 100)|round }}%; background: var(--suggestion);"></div>{% endif %}
+      {% if by_severity.praise %}<div class="severity-bar-segment" style="width: {{ (by_severity.praise|length / total * 100)|round }}%; background: var(--praise);"></div>{% endif %}
+    </div>
+    <div class="severity-bar-legend">
+      {% for key, cfg in severity_config.items() %}
+      <div class="legend-item">
+        <div class="legend-dot" style="background: {{ cfg.color }};"></div>
+        {{ cfg.label }} ({{ by_severity[key] | length }})
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ─── Changed Files ─── -->
+  {% if changed_files %}
+  <div class="section-title">📄 Changed Files ({{ changed_files | length }})</div>
+  <div class="files-list">
+    {% for file in changed_files %}
+    <div class="file-chip">{{ file }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ─── Commits ─── -->
+  {% if commits %}
+  <div class="commits-section">
+    <div class="section-title">📝 Commits ({{ commits | length }})</div>
+    <ul class="commit-list">
+      {% for commit in commits %}
+      <li class="commit-item">
+        <span class="commit-hash">{{ commit[:7] }}</span>
+        <span>{{ commit[8:] }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- ─── Diff Stat ─── -->
+  {% if diff_stat %}
+  <div class="section-title">📊 Diff Summary</div>
+  <div class="diff-stat">{{ diff_stat }}</div>
+  {% endif %}
+
+  <!-- ─── Findings by File ─── -->
+  <div class="findings-section">
+    <div class="section-title">🔍 Review Findings</div>
+
+    {% if not findings %}
+    <div class="empty-state">
+      <div class="emoji">🎉</div>
+      <p>No issues found. The code looks clean!</p>
+    </div>
+    {% else %}
+
+    {% for file, file_findings in by_file.items() %}
+    <div class="file-group">
+      <div class="file-header">
+        <span>📄</span>
+        <span>{{ file }}</span>
+        <span class="file-badge">{{ file_findings | length }} {{ 'issue' if file_findings | length == 1 else 'issues' }}</span>
+      </div>
+
+      {% for f in file_findings %}
+      {% set sev = f.severity | default('suggestion') | lower %}
+      {% set cfg = severity_config.get(sev, severity_config.suggestion) %}
+      <div class="finding">
+        <div class="finding-header" style="border-left-color: {{ cfg.color }};">
+          <span class="severity-badge" style="background: {{ cfg.color }}; color: white;">{{ cfg.emoji }} {{ cfg.label }}</span>
+          {% if f.category %}<span class="finding-category">{{ f.category }}</span>{% endif %}
+          {% if f.line %}<span class="finding-line">Line {{ f.line }}</span>{% endif %}
+          <span class="finding-title">{{ f.title | default('Untitled issue') }}</span>
+        </div>
+        <div class="finding-body">
+          {% if f.description %}
+          <div class="finding-description">{{ f.description }}</div>
+          {% endif %}
+          {% if f.suggestion %}
+          <div class="suggestion-label">💡 Suggested Fix</div>
+          <div class="finding-suggestion">{{ f.suggestion }}</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+
+    {% endif %}
+  </div>
+
+  <!-- ─── Footer ─── -->
+  <div class="footer">
+    <p>Generated by <strong>OpenCode Review Bot</strong> on {{ generated_at }}</p>
+    <p>Powered by <a href="https://opencode.ai">OpenCode AI</a> · Model: <code>{{ model }}</code></p>
+  </div>
+
+</div>
+</body>
+</html>
