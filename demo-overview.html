@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenCode Review Bot — Demo Overview</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e4e6eb;
+    --text-dim: #8b8fa3;
+    --accent: #6366f1;
+    --critical: #dc2626;
+    --warning: #d97706;
+    --suggestion: #2563eb;
+    --praise: #16a34a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 32px 24px;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+
+  /* ─── Header ─── */
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+    padding: 32px 0;
+  }
+  .header h1 {
+    font-size: 36px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #6366f1 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header .subtitle {
+    color: var(--text-dim);
+    font-size: 16px;
+    margin-bottom: 24px;
+  }
+  .badges { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .badge {
+    background: rgba(99,102,241,0.1);
+    border: 1px solid rgba(99,102,241,0.3);
+    color: var(--accent);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  /* ─── Section ─── */
+  .section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  .section h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: var(--accent);
+  }
+  .section p { margin-bottom: 12px; color: var(--text); }
+  .section ul, .section ol { margin-left: 24px; margin-bottom: 12px; }
+  .section li { margin-bottom: 6px; color: var(--text); }
+  .section code {
+    background: rgba(0,0,0,0.3);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    color: #fbbf24;
+  }
+  .section pre {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 12px 0 16px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .section pre code {
+    background: transparent;
+    padding: 0;
+    color: var(--text);
+  }
+
+  /* ─── Architecture Diagram ─── */
+  .architecture {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+  .arch-step {
+    background: rgba(99,102,241,0.08);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 8px;
+    padding: 14px 18px;
+    text-align: center;
+    min-width: 140px;
+    flex: 1;
+  }
+  .arch-step .emoji { font-size: 24px; margin-bottom: 6px; }
+  .arch-step .label { font-size: 13px; font-weight: 600; }
+  .arch-step .sublabel { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+  .arch-arrow {
+    color: var(--accent);
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  /* ─── Comparison Table ─── */
+  .comparison {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+  }
+  .comparison th, .comparison td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .comparison th {
+    background: rgba(99,102,241,0.05);
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .comparison tr:last-child td { border-bottom: none; }
+  .comparison .yes { color: var(--praise); font-weight: 600; }
+  .comparison .no { color: var(--critical); font-weight: 600; }
+  .comparison .limited { color: var(--warning); font-weight: 600; }
+
+  /* ─── Findings Box ─── */
+  .findings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .finding-card {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .finding-card .emoji { font-size: 28px; margin-bottom: 6px; }
+  .finding-card .count { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+  .finding-card .label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  .finding-card.critical { border-color: rgba(220,38,38,0.3); }
+  .finding-card.critical .count { color: var(--critical); }
+  .finding-card.warning { border-color: rgba(217,119,6,0.3); }
+  .finding-card.warning .count { color: var(--warning); }
+  .finding-card.suggestion { border-color: rgba(37,99,235,0.3); }
+  .finding-card.suggestion .count { color: var(--suggestion); }
+
+  /* ─── Links ─── */
+  .repo-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .repo-link {
+    background: rgba(99,102,241,0.08);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 8px;
+    padding: 18px;
+    text-decoration: none;
+    display: block;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .repo-link:hover {
+    transform: translateY(-2px);
+    border-color: rgba(99,102,241,0.6);
+  }
+  .repo-link .name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .repo-link .desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  /* ─── Footer ─── */
+  .footer {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-top: 32px;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>🤖 OpenCode Review Bot</h1>
+    <p class="subtitle">AI-powered code review — any model, any provider, fully headless</p>
+    <div class="badges">
+      <span class="badge">⚡ Headless</span>
+      <span class="badge">🔌 Provider-Agnostic</span>
+      <span class="badge">🔒 Privacy-First</span>
+      <span class="badge">📊 HTML Reports</span>
+    </div>
+  </div>
+
+  <!-- ─── What It Is ─── -->
+  <div class="section">
+    <h2>🎯 What Is This?</h2>
+    <p>
+      A <strong>fully automated code review bot</strong> that clones a git repo, diffs a branch,
+      sends the changes to an AI model, and generates a professional HTML report — all in one command.
+    </p>
+    <p>
+      The key idea: it runs <strong>entirely headless</strong> via OpenCode's <code>run</code> command,
+      making it perfect for CI/CD pipelines, GitHub webhooks, Slack bots, or any automation you can imagine.
+      No interactive terminal required.
+    </p>
+  </div>
+
+  <!-- ─── Architecture ─── -->
+  <div class="architecture">
+    <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">🏗️ How It Works</h2>
+    <div class="arch-flow">
+      <div class="arch-step">
+        <div class="emoji">📥</div>
+        <div class="label">Clone Repo</div>
+        <div class="sublabel">+ checkout branch</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-step">
+        <div class="emoji">🔍</div>
+        <div class="label">Git Diff</div>
+        <div class="sublabel">base...target</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-step">
+        <div class="emoji">🤖</div>
+        <div class="label">OpenCode AI</div>
+        <div class="sublabel">any model/provider</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-step">
+        <div class="emoji">📊</div>
+        <div class="label">HTML Report</div>
+        <div class="sublabel">severity, score, fixes</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Why OpenCode ─── -->
+  <div class="section">
+    <h2>💡 Why OpenCode, Not Claude Code?</h2>
+    <p>
+      This demo exists to prove that <strong>OpenCode is a programmable coding platform</strong>,
+      while Claude Code is an interactive CLI. The difference matters when you want automation.
+    </p>
+
+    <table class="comparison">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Claude Code</th>
+          <th>OpenCode</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Headless API for automation</td>
+          <td class="limited">Limited (<code>-p</code> only)</td>
+          <td class="yes">Full SDK + HTTP server</td>
+        </tr>
+        <tr>
+          <td>Provider flexibility</td>
+          <td class="no">Anthropic only</td>
+          <td class="yes">Any (Claude, GPT, Gemini, local)</td>
+        </tr>
+        <tr>
+          <td>Use subscription programmatically</td>
+          <td class="no">Interactive CLI only</td>
+          <td class="yes">BYO API keys, full programmatic</td>
+        </tr>
+        <tr>
+          <td>Data storage</td>
+          <td class="limited">Vendor server</td>
+          <td class="yes">Zero storage — privacy first</td>
+        </tr>
+        <tr>
+          <td>Open source</td>
+          <td class="no">Proprietary</td>
+          <td class="yes">160K GitHub stars</td>
+        </tr>
+        <tr>
+          <td>Cost control by task</td>
+          <td class="limited">Fixed model</td>
+          <td class="yes">Route to cheapest model per task</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>The Subscription Problem (Specifically)</h3>
+    <p>
+      Claude Code subscriptions (Pro/Max at $20-200/mo) are tied to interactive CLI use.
+      You <strong>cannot</strong> use a Claude subscription to run this bot — you need a separate
+      Anthropic API key (pay-per-token).
+    </p>
+    <p>
+      With OpenCode, you bring whatever API key your team already has (OpenRouter, OpenAI, Google, etc.)
+      and it works <strong>everywhere</strong>: interactive TUI, headless CLI, HTTP server, SDK.
+    </p>
+  </div>
+
+  <!-- ─── Demo Result ─── -->
+  <div class="section">
+    <h2>📊 Demo Result — Real Run, Real Findings</h2>
+    <p>
+      This bot was run against a <strong>demo vulnerable Flask app</strong> (a separate repo) containing
+      intentional security issues. Here's what OpenCode found in ~30 seconds:
+    </p>
+
+    <div class="findings-grid">
+      <div class="finding-card critical">
+        <div class="emoji">🔴</div>
+        <div class="count">17</div>
+        <div class="label">Critical</div>
+      </div>
+      <div class="finding-card warning">
+        <div class="emoji">🟡</div>
+        <div class="count">5</div>
+        <div class="label">Warning</div>
+      </div>
+      <div class="finding-card suggestion">
+        <div class="emoji">🔵</div>
+        <div class="count">2</div>
+        <div class="label">Suggestion</div>
+      </div>
+    </div>
+
+    <h3>What it caught:</h3>
+    <ul>
+      <li><strong>SQL injection</strong> via string concatenation in 4 places</li>
+      <li><strong>Plaintext password storage</strong> (no hashing)</li>
+      <li><strong>Hardcoded credentials</strong> (<code>P@ssw0rd123!</code> in source)</li>
+      <li><strong>MD5 password hashing</strong> (cryptographically broken)</li>
+      <li><strong>Predictable reset tokens</strong> using <code>hash()</code></li>
+      <li><strong>User enumeration</strong> via different error messages</li>
+      <li><strong>Password hash leak</strong> in API response</li>
+      <li><strong>Full traceback exposure</strong> to clients</li>
+      <li><strong>No authorization checks</strong> on user data endpoints</li>
+      <li><strong>Debug mode in production</strong> (<code>debug=True</code>)</li>
+    </ul>
+
+    <h3>Output: Self-Contained HTML</h3>
+    <p>
+      The report is a single HTML file with inline CSS — no dependencies, no server needed.
+      Drop it in Slack, email it, host it anywhere.
+    </p>
+  </div>
+
+  <!-- ─── Try It ─── -->
+  <div class="section">
+    <h2>🚀 Try It Yourself</h2>
+
+    <h3>1. Install & Run</h3>
+<pre><code>git clone https://github.com/chopperddw/opencode-review-bot
+cd opencode-review-bot
+uv init && uv add jinja2</code></pre>
+
+    <h3>2. Get an API key (any provider)</h3>
+<pre><code>export OPENROUTER_API_KEY=*** your-key</code></pre>
+
+    <h3>3. Review any repo</h3>
+<pre><code>python review_bot.py \
+  --repo https://github.com/user/repo.git \
+  --branch feature/x \
+  --base main \
+  --output review.html
+
+# Or with a different model:
+python review_bot.py --repo ... --model openrouter/openai/gpt-5.5
+python review_bot.py --repo ... --model openrouter/google/gemini-2.5-pro</code></pre>
+
+    <h3>4. Open the report</h3>
+<pre><code>xdg-open review.html  # Linux
+open review.html      # macOS</code></pre>
+  </div>
+
+  <!-- ─── Integration Ideas ─── -->
+  <div class="section">
+    <h2>🔌 Real-World Integrations</h2>
+    <ul>
+      <li><strong>CI/CD Pipeline:</strong> Run on every PR, post report as a comment</li>
+      <li><strong>GitHub Action:</strong> Auto-trigger on PR open, attach report to PR thread</li>
+      <li><strong>Slack Bot:</strong> Webhook triggers review, posts summary in channel</li>
+      <li><strong>Scheduled:</strong> Weekly audit of all merged branches</li>
+      <li><strong>Multi-Model:</strong> Run same review through Claude + GPT, compare results</li>
+      <li><strong>Self-Hosted:</strong> Run on internal infra with zero data leaving your network</li>
+    </ul>
+  </div>
+
+  <!-- ─── Repos ─── -->
+  <div class="section">
+    <h2>📦 Repos</h2>
+    <div class="repo-links">
+      <a href="https://github.com/chopperddw/opencode-review-bot" class="repo-link">
+        <div class="name">🤖 opencode-review-bot</div>
+        <div class="desc">The review bot code — Python script + Jinja2 HTML template</div>
+      </a>
+      <a href="https://github.com/chopperddw/demo-vulnerable-app" class="repo-link">
+        <div class="name">📚 demo-vulnerable-app</div>
+        <div class="desc">Sample Flask app with intentional security issues for testing the bot</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Generated by the <strong>OpenCode Review Bot</strong> itself — powered by OpenCode AI</p>
+    <p>Demo built for showcasing OpenCode vs Claude Code · 2026</p>
+  </div>
+
+</div>
+</body>
+</html>
