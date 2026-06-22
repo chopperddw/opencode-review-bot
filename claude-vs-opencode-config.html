@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code → OpenCode — Configuration Cheat Sheet</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --card-alt: #1e2230;
+    --border: #2a2d3a;
+    --text: #e4e6eb;
+    --text-dim: #8b8fa3;
+    --accent: #6366f1;
+    --cc: #d97757;  /* Claude Code orange */
+    --oc: #16a34a;  /* OpenCode green */
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 32px 24px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  /* ─── Header ─── */
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 32px 0;
+  }
+  .header h1 {
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .header .cc-color { color: var(--cc); }
+  .header .arrow { color: var(--text-dim); margin: 0 8px; }
+  .header .oc-color { color: var(--oc); }
+  .header .subtitle {
+    color: var(--text-dim);
+    font-size: 15px;
+    max-width: 600px;
+    margin: 12px auto 0;
+  }
+
+  /* ─── Quick Nav ─── */
+  .quick-nav {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .nav-link {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .nav-link:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ─── Comparison Section ─── */
+  .section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .section-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card-alt);
+  }
+  .section-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .section-header .emoji { font-size: 22px; }
+  .section-body { padding: 0; }
+
+  /* ─── Side-by-side table ─── */
+  .cmp-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .cmp-table th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--border);
+    width: 25%;
+  }
+  .cmp-table .th-cc { color: var(--cc); }
+  .cmp-table .th-oc { color: var(--oc); }
+  .cmp-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    vertical-align: top;
+  }
+  .cmp-table td:first-child {
+    font-weight: 600;
+    color: var(--text);
+    width: 25%;
+  }
+  .cmp-table tr:last-child td { border-bottom: none; }
+  .cmp-table code {
+    background: rgba(0,0,0,0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #fbbf24;
+    display: inline-block;
+    margin: 1px 0;
+  }
+  .cmp-table .cc-cell { border-left: 3px solid rgba(217,119,87,0.2); }
+  .cmp-table .oc-cell { border-left: 3px solid rgba(22,163,74,0.2); }
+
+  /* ─── Code block ─── */
+  .code-block {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 6px 0;
+    font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre;
+    color: #b8bccc;
+  }
+  .code-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    font-family: 'SF Mono', monospace;
+  }
+
+  /* ─── Callout ─── */
+  .callout {
+    background: rgba(99,102,241,0.08);
+    border: 1px solid rgba(99,102,241,0.25);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 16px 24px;
+    font-size: 13px;
+  }
+  .callout strong { color: var(--accent); }
+  .callout.compat {
+    background: rgba(22,163,74,0.08);
+    border-color: rgba(22,163,74,0.25);
+  }
+  .callout.compat strong { color: var(--oc); }
+
+  /* ─── Color legend ─── */
+  .legend {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-bottom: 24px;
+    font-size: 13px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; color: var(--text-dim); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+  /* ─── Footer ─── */
+  .footer {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-dim);
+    font-size: 12px;
+    margin-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>
+      <span class="cc-color">Claude Code</span>
+      <span class="arrow">→</span>
+      <span class="oc-color">OpenCode</span>
+    </h1>
+    <p class="subtitle">
+      Configuration cheat sheet for teams transitioning from Claude Code to OpenCode.
+      Find where everything lives — MCP, rules, commands, agents, hooks, permissions, and more.
+    </p>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background: var(--cc);"></div> Claude Code</div>
+    <div class="legend-item"><div class="legend-dot" style="background: var(--oc);"></div> OpenCode</div>
+  </div>
+
+  <div class="quick-nav">
+    <a href="#main-config" class="nav-link">⚙️ Main Config</a>
+    <a href="#mcp" class="nav-link">🔌 MCP Servers</a>
+    <a href="#rules" class="nav-link">📋 Rules / Memory</a>
+    <a href="#commands" class="nav-link">⌨️ Commands</a>
+    <a href="#agents" class="nav-link">🤖 Agents</a>
+    <a href="#skills" class="nav-link">🎓 Skills</a>
+    <a href="#hooks" class="nav-link">🪝 Hooks</a>
+    <a href="#permissions" class="nav-link">🔐 Permissions</a>
+    <a href="#auth" class="nav-link">🔑 Auth</a>
+    <a href="#sessions" class="nav-link">💾 Sessions</a>
+    <a href="#paths" class="nav-link">📁 Global Paths</a>
+  </div>
+
+  <!-- ═══ Main Config ═══ -->
+  <div class="section" id="main-config">
+    <div class="section-header">
+      <span class="emoji">⚙️</span>
+      <h2>Main Configuration File</h2>
+    </div>
+    <div class="section-body">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>Scope</th>
+            <th class="th-cc">Claude Code</th>
+            <th class="th-oc">OpenCode</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Project (shared)</td>
+            <td class="cc-cell"><code>.claude/settings.json</code></td>
+            <td class="oc-cell"><code>opencode.json</code> or <code>opencode.jsonc</code><br><span style="color:var(--text-dim);font-size:11px">at project root</span></td>
+          </tr>
+          <tr>
+            <td>Project (personal)</td>
+            <td class="cc-cell"><code>.claude/settings.local.json</code><br><span style="color:var(--text-dim);font-size:11px">gitignored</span></td>
+            <td class="oc-cell"><code>.opencode/opencode.json</code><br><span style="color:var(--text-dim);font-size:11px">or use <code>.gitignore</code></span></td>
+          </tr>
+          <tr>
+            <td>Global (user)</td>
+            <td class="cc-cell"><code>~/.claude/settings.json</code></td>
+            <td class="oc-cell"><code>~/.config/opencode/opencode.json</code></td>
+          </tr>
+          <tr>
+            <td>Format</td>
+            <td class="cc-cell">JSON</td>
+            <td class="oc-cell">JSON or JSONC<br><span style="color:var(--text-dim);font-size:11px">(comments allowed!)</span></td>
+          </tr>
+          <tr>
+            <td>Schema validation</td>
+            <td class="cc-cell">Built-in</td>
+            <td class="oc-cell"><code>"$schema": "https://opencode.ai/config.json"</code></td>
+          </tr>
+          <tr>
+            <td>Override via CLI</td>
+            <td class="cc-cell"><code>claude -c 'key=value'</code></td>
+            <td class="oc-cell"><code>opencode -c 'key=value'</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout compat">
+        <strong>✅ Compatibility:</strong> OpenCode reads <code>CLAUDE.md</code> files automatically. Your existing Claude Code project instructions work out of the box.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MCP Servers ═══ -->
+  <div class="section" id="mcp">
+    <div class="section-header">
+      <span class="emoji">🔌</span>
+      <h2>MCP Servers</h2>
+    </div>
+    <div class="section-body">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th class="th-cc">Claude Code</th>
+            <th class="th-oc">OpenCode</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Project-level</td>
+            <td class="cc-cell"><code>.mcp.json</code><br><span style="color:var(--text-dim);font-size:11px">at project root</span></td>
+            <td class="oc-cell">In <code>opencode.json</code> → <code>"mcp"</code> key</td>
+          </tr>
+          <tr>
+            <td>Global (user)</td>
+            <td class="cc-cell"><code>~/.claude.json</code><br><span style="color:var(--text-dim);font-size:11px">via <code>claude mcp add -s user</code></span></td>
+            <td class="oc-cell">In <code>~/.config/opencode/opencode.json</code> → <code>"mcp"</code></td>
+          </tr>
+          <tr>
+            <td>CLI command</td>
+            <td class="cc-cell"><code>claude mcp add &lt;name&gt; -- &lt;cmd&gt;</code></td>
+            <td class="oc-cell">Edit config file directly<br><span style="color:var(--text-dim);font-size:11px">no CLI add command</span></td>
+          </tr>
+          <tr>
+            <td>List servers</td>
+            <td class="cc-cell"><code>claude mcp list</code></td>
+            <td class="oc-cell">Check config or use <code>/mcp</code> in TUI</td>
+          </tr>
+          <tr>
+            <td>Remote MCP</td>
+            <td class="cc-cell">HTTP/SSE transport</td>
+            <td class="oc-cell">HTTP/SSE + OAuth support</td>
+          </tr>
+          <tr>
+            <td>Scope flags</td>
+            <td class="cc-cell"><code>-s user</code> / <code>-s local</code> / <code>-s project</code></td>
+            <td class="oc-cell">Determined by which config file<br><span style="color:var(--text-dim);font-size:11px">project json vs global json</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="padding: 16px 24px;">
+        <div class="code-label">Claude Code — .mcp.json</div>
+        <div class="code-block">{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-github"]
+    }
+  }
+}</div>
+        <div class="code-label" style="margin-top:12px;">OpenCode — opencode.jsonc</div>
+        <div class="code-block">{
+  "mcp": {
+    "github": {
+      "type": "local",
+      "command": ["npx", "@modelcontextprotocol/server-github"],
+      "enabled": true
+    }
+  }
+}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Rules / Memory ═══ -->
+  <div class="section" id="rules">
+    <div class="section-header">
+      <span class="emoji">📋</span>
+      <h2>Rules / Project Instructions (CLAUDE.md vs AGENTS.md)</h2>
+    </div>
+    <div class="section-body">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>Scope</th>
+            <th class="th-cc">Claude Code</th>
+            <th class="th-oc">OpenCode</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Project (shared)</td>
+            <td class="cc-cell"><code>./CLAUDE.md</code><br><span style="color:var(--text-dim);font-size:11px">project root, git-tracked</span></td>
+            <td class="oc-cell"><code>./AGENTS.md</code><br><span style="color:var(--text-dim);font-size:11px">project root, git-tracked</span></td>
+          </tr>
+          <tr>
+            <td>Project (personal)</td>
+            <td class="cc-cell"><code>.claude/CLAUDE.local.md</code><br><span style="color:var(--text-dim);font-size:11px">gitignored</span></td>
+            <td class="oc-cell"><code>.opencode/AGENTS.md</code> or config <code>"instructions"</code></td>
+          </tr>
+          <tr>
+            <td>Global (user)</td>
+            <td class="cc-cell"><code>~/.claude/CLAUDE.md</code></td>
+            <td class="oc-cell">Config <code>"instructions"</code> field<br>or <code>~/.config/opencode/AGENTS.md</code></td>
+          </tr>
+          <tr>
+            <td>Modular rules</td>
+            <td class="cc-cell"><code>.claude/rules/*.md</code><br><code>~/.claude/rules/*.md</code></td>
+            <td class="oc-cell">Reference files from <code>AGENTS.md</code><br><span style="color:var(--text-dim);font-size:11px">or in config <code>"instructions"</code> array</span></td>
+          </tr>
+          <tr>
+            <td>Auto-generate</td>
+            <td class="cc-cell"><code>/init</code> command</td>
+            <td class="oc-cell"><code>/init</code> command<br><span style="color:var(--text-dim);font-size:11px">scans repo, writes AGENTS.md</span></td>
+          </tr>
+          <tr>
+            <td>Quick add</td>
+            <td class="cc-cell"><code>#</code> prefix in TUI<br><span style="color:var(--text-dim);font-size:11px">e.g. <code># Use 2-space indent</code></span></td>
+            <td class="oc-cell">Edit <code>AGENTS.md</code> manually</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout compat">
+        <strong>✅ Backward Compatible:</strong> OpenCode reads <code>CLAUDE.md</code> files too! If <code>AGENTS.md</code> doesn't exist, it falls back to <code>CLAUDE.md</code>. You can migrate gradually.
+      </div>
+      <div style="padding: 0 24px 16px;">
+        <div class="code-label">OpenCode — referencing external rule files in AGENTS.md</div>
+        <div class="code-block"># Project Rules
+
+See @rules/coding-standards.md
+See @rules/testing.md
+
+## Quick Reference
+- Use TypeScript strict mode
+- Test with vitest</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Commands ═══ -->
+  <div class="section" id="commands">
+    <div class="section-header">
+      <span class="emoji">⌨️</span>
+      <h2>Custom Slash Commands</h2>
+    </div>
+    <div class="section-body">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th class="th-cc">Claude Code</th>
+            <th class="th-oc">OpenCode</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Project commands</td>
+            <td class="cc-cell"><code>.claude/commands/&lt;name&gt;.md</code></td>
+            <td class="oc-cell"><code>.opencode/commands/&lt;name&gt;.md</code></td>
+          </tr>
+          <tr>
+            <td>Global commands</td>
+            <td class="cc-cell"><code>~/.claude/commands/&lt;name&gt;.md</code></td>
+            <td class="oc-cell">In <code>opencode.json</code> → <code>"commands"</code> key</td>
+          </tr>
+          <tr>
+            <td>Format</td>
+            <td class="cc-cell">Markdown with frontmatter</td>
+            <td class="oc-cell">Markdown with frontmatter<br><span style="color:var(--text-dim);font-size:11px">or JSON in config</span></td>
+          </tr>
+          <tr>
+            <td>Arguments</td>
+            <td class="cc-cell"><code>$ARGUMENTS</code> placeholder</td>
+            <td class="oc-cell"><code>{{args}}</code> template variable</td>
+          </tr>
+          <tr>
+            <td>Invocation</td>
+            <td class="cc-cell"><code>/command-name</code></td>
+            <td class="oc-cell"><code>/command-name</code></td>
+          </tr>
+          <tr>
+            <td>Per-command model</td>
+            <td class="cc-cell">❌ Not supported</td>
+            <td class="oc-cell">✅ <code>model: anthropic/claude-sonnet-4</code> in frontmatter</td>
+          </tr>
+          <tr>
+            <td>Per-command agent</td>
+            <td class="cc-cell">❌ Not supported</td>
+            <td class="oc-cell">✅ <code>agent: build</code> or <code>agent: plan</code> in frontmatter</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="padding: 16px 24px;">
+        <div class="code-label">Claude Code — .claude/commands/deploy.md</div>
+        <div class="code-block"># Deploy command
+Run the deploy pipeline for $ARGUMENTS (default: staging).</div>
+        <div class="code-label" style="margin-top:12px;">OpenCode — .opencode/commands/deploy.md</div>
+        <div class="code-block">---
+description: Deploy to environment
+agent: build
+model: anthropic/claude-sonnet-4
+---
+Run the deploy pipeline for {{args}} (default: staging).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Agents ═══ -->
+  <div class="section" id="agents">
+    <div class="section-header">
+      <span class="emoji">🤖</span>
+      <h2>Custom Agents / Subagents</h2>
+    </div>
+    <div class="section-body">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th class="th-cc">Claude Code</th>
+            <th class="th-oc">OpenCode</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Project agents</td>
+            <td class="cc-cell"><code>.claude/agents/&lt;name&gt;.md</code></td>
+            <td class="oc-cell"><code>.opencode/agents/&lt;name&gt;.md</code><br><span style="color:var(--text-dim);font-size:11px">or in config <code>"agent"</code> key</span></td>
+          </tr>
+          <tr>
+            <td>Global agents</td>
+            <td class="cc-cell"><code>~/.claude/agents/&lt;name&gt;.md</code></td>
+            <td class="oc-cell">In global <code>opencode.json</code></td>
+          </tr>
+          <tr>
+            <td>Built-in agents</td>
+            <td class="cc-cell">None (single mode)</td>
+            <td class="oc-cell"><code>build</code>, <code>plan</code>, <code>general</code>,<br><code>explore</code>, <code>scout</code></td>
+          </tr>
+          <tr>
+            <td>Switch agents</td>
+            <td class="cc-cell"><code>@agent-name</code> mention</td>
+            <td class="oc-cell"><strong>Tab</strong> key or <code>@agent-name</code></td>
+          </tr>
+          <tr>
+            <td>Per-agent model</td>
+            <td class="cc-cell">✅ In frontmatter</td>
+            <td class="oc-cell">✅ In frontmatter or config</td>
+          </tr>
+          <tr>
+            <td>Per-agent tools</td>
+            <td class="cc-cell">✅ <code>tools: [Read, Bash]</code></td>
+            <td class="oc-cell">✅ <code>"tools"</code> in config</td>
+          </tr>
+          <tr>
+            <td>Subagent tasks</td>
+            <td class="cc-cell">Via <code>--agents</code> JSON</td>
+            <td class="oc-cell"><code>subtask: true</code> in frontmatter</td>
+          </tr>
+          <tr>
+            <td>Plan mode</td>
+            <td class="cc-cell"><code>Shift+Tab</code> or <code>/plan</code></td>
+            <td class="oc-cell">Switch to <code>plan</code> agent via Tab</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ Skills ═══ -->
+  <div class="section" id="skills">
+    <div class="section-header">
+      <span class="emoji">🎓</span>
+      <h2>Skills</h2>
+    </div>
+    <div class="section-body">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th class="th-cc">Claude Code</th>
+            <th class="th-oc">OpenCode</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Project skills</td>
+            <td class="cc-cell"><code>.claude/skills/&lt;name&gt;.md</code></td>
+            <td class="oc-cell"><code>.opencode/skills/&lt;name&gt;.md</code></td>
+          </tr>
+          <tr>
+            <td>Global skills</td>
+            <td class="cc-cell"><code>~/.claude/skills/&lt;name&gt;.md</code></td>
+            <td class="oc-cell"><code>~/.config/opencode/skills/&lt;name&gt;.md</code></td>
+          </tr>
+          <tr>
+            <td>Auto-invocation</td>
+            <td class="cc-cell">Natural language matching</td>
+            <td class="oc-cell">Natural language matching</td>
+          </tr>
+          <tr>
+            <td>Skill format</td>
+            <td class="cc-cell">Markdown guide</td>
+            <td class="oc-cell">Markdown guide<br><span style="color:var(--text-dim);font-size:11px">same concept</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ Hooks ═══ -->
+  <div class="section" id="hooks">
+    <div class="section-header">
+      <span class="emoji">🪝</span>
+      <h2>Hooks &amp; Automation</h2>
+    </div>
+    <div class="section-body">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th class="th-cc">Claude Code</th>
+            <th class="th-oc">OpenCode</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Where defined</td>
+            <td class="cc-cell"><code>settings.json</code> → <code>"hooks"</code></td>
+            <td class="oc-cell"><code>opencode.json</code> → <code>"plugins"</code><br><span style="color:var(--text-dim);font-size:11px">or custom tools</span></td>
+          </tr>
+          <tr>
+            <td>Pre-tool hook</td>
+            <td class="cc-cell"><code>PreToolUse</code> event</td>
+            <td class="oc-cell">Plugin system</td>
+          </tr>
+          <tr>
+            <td>Post-tool hook</td>
+            <td class="cc-cell"><code>PostToolUse</code> event</td>
+            <td class="oc-cell">Plugin system</td>
+          </tr>
+          <tr>
+            <td>Block commands</td>
+            <td class="cc-cell"><code>exit 2</code> in hook script</td>
+            <td class="oc-cell">Plugin returns error</td>
+          </tr>
+          <tr>
+            <td>On session start</td>
+            <td class="cc-cell"><code>SessionStart</code> event</td>
+            <td class="oc-cell">Plugin lifecycle hooks</td>
+          </tr>
+          <tr>
+            <td>Plugin ecosystem</td>
+            <td class="cc-cell">Limited to hooks</td>
+            <td class="oc-cell">Full plugin framework<br><span style="color:var(--text-dim);font-size:11px"><code>@opencode-ai/plugin</code> npm package</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        <strong>Key difference:</strong> Claude Code uses shell-script hooks in settings.json. OpenCode has a full plugin framework (npm packages) that can intercept tool calls, add custom tools, and modify agent behavior programmatically.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Permissions ═══ -->
+  <div class="section" id="permissions">
+    <div class="section-header">
+      <span class="emoji">🔐</span>
+      <h2>Permissions &amp; Safety</h2>
+    </div>
+    <div class="section-body">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th class="th-cc">Claude Code</th>
+            <th class="th-oc">OpenCode</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Allow list</td>
+            <td class="cc-cell"><code>permissions.allow</code> in settings.json</td>
+            <td class="oc-cell"><code>"permissions"</code> in opencode.json</td>
+          </tr>
+          <tr>
+            <td>Deny list</td>
+            <td class="cc-cell"><code>permissions.deny</code> in settings.json</td>
+            <td class="oc-cell"><code>"permissions"</code> in opencode.json</td>
+          </tr>
+          <tr>
+            <td>Ask list</td>
+            <td class="cc-cell"><code>permissions.ask</code> in settings.json</td>
+            <td class="oc-cell">Interactive prompts in TUI</td>
+          </tr>
+          <tr>
+            <td>Bypass all</td>
+            <td class="cc-cell"><code>--dangerously-skip-permissions</code></td>
+            <td class="oc-cell"><code>--dangerously-skip-permissions</code></td>
+          </tr>
+          <tr>
+            <td>Tool patterns</td>
+            <td class="cc-cell"><code>Bash(git *)</code>, <code>Write(*.ts)</code></td>
+            <td class="oc-cell">Tool-level enable/disable</td>
+          </tr>
+          <tr>
+            <td>Permission modes</td>
+            <td class="cc-cell"><code>default</code>, <code>acceptEdits</code>,<br><code>plan</code>, <code>bypassPermissions</code></td>
+            <td class="oc-cell"><code>default</code>, <code>plan</code>,<br><code>auto</code>, <code>yolo</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ Auth ═══ -->
+  <div class="section" id="auth">
+    <div class="section-header">
+      <span class="emoji">🔑</span>
+      <h2>Authentication</h2>
+    </div>
+    <div class="section-body">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th class="th-cc">Claude Code</th>
+            <th class="th-oc">OpenCode</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Login command</td>
+            <td class="cc-cell"><code>claude auth login</code></td>
+            <td class="oc-cell"><code>opencode auth login</code></td>
+          </tr>
+          <tr>
+            <td>Check status</td>
+            <td class="cc-cell"><code>claude auth status</code></td>
+            <td class="oc-cell"><code>opencode auth list</code></td>
+          </tr>
+          <tr>
+            <td>Credential storage</td>
+            <td class="cc-cell"><code>~/.claude/</code> (OAuth tokens)</td>
+            <td class="oc-cell"><code>~/.local/share/opencode/auth.json</code></td>
+          </tr>
+          <tr>
+            <td>Providers supported</td>
+            <td class="cc-cell">Anthropic only<br><span style="color:var(--text-dim);font-size:11px">OAuth (Pro/Max) or API key</span></td>
+            <td class="oc-cell">Any provider<br><span style="color:var(--text-dim);font-size:11px">OpenRouter, OpenAI, Google, Anthropic, Z.AI, etc.</span></td>
+          </tr>
+          <tr>
+            <td>API key env var</td>
+            <td class="cc-cell"><code>ANTHROPIC_API_KEY</code></td>
+            <td class="oc-cell"><code>OPENROUTER_API_KEY</code>,<br><code>ANTHROPIC_API_KEY</code>, <code>OPENAI_API_KEY</code>, etc.</td>
+          </tr>
+          <tr>
+            <td>Multiple providers</td>
+            <td class="cc-cell">❌ Single provider</td>
+            <td class="oc-cell">✅ Multiple simultaneously</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ Sessions ═══ -->
+  <div class="section" id="sessions">
+    <div class="section-header">
+      <span class="emoji">💾</span>
+      <h2>Session Storage &amp; History</h2>
+    </div>
+    <div class="section-body">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th class="th-cc">Claude Code</th>
+            <th class="th-oc">OpenCode</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Session location</td>
+            <td class="cc-cell"><code>~/.claude/projects/&lt;hash&gt;/</code></td>
+            <td class="oc-cell"><code>~/.local/share/opencode/storage/</code></td>
+          </tr>
+          <tr>
+            <td>Resume last session</td>
+            <td class="cc-cell"><code>claude -c</code> or <code>claude --continue</code></td>
+            <td class="oc-cell"><code>opencode -c</code> or <code>opencode --continue</code></td>
+          </tr>
+          <tr>
+            <td>Resume specific</td>
+            <td class="cc-cell"><code>claude -r &lt;id&gt;</code></td>
+            <td class="oc-cell"><code>opencode -s &lt;session-id&gt;</code></td>
+          </tr>
+          <tr>
+            <td>Session list</td>
+            <td class="cc-cell">Interactive picker</td>
+            <td class="oc-cell"><code>opencode session list</code></td>
+          </tr>
+          <tr>
+            <td>Auto-memory</td>
+            <td class="cc-cell"><code>~/.claude/projects/&lt;hash&gt;/memory/</code></td>
+            <td class="oc-cell">Per-session storage</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ Global Paths Summary ═══ -->
+  <div class="section" id="paths">
+    <div class="section-header">
+      <span class="emoji">📁</span>
+      <h2>Global File Paths — Quick Reference (Linux)</h2>
+    </div>
+    <div class="section-body">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>What</th>
+            <th class="th-cc">Claude Code</th>
+            <th class="th-oc">OpenCode</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Config root</td>
+            <td class="cc-cell"><code>~/.claude/</code></td>
+            <td class="oc-cell"><code>~/.config/opencode/</code></td>
+          </tr>
+          <tr>
+            <td>Main config file</td>
+            <td class="cc-cell"><code>~/.claude/settings.json</code></td>
+            <td class="oc-cell"><code>~/.config/opencode/opencode.json</code></td>
+          </tr>
+          <tr>
+            <td>Global rules</td>
+            <td class="cc-cell"><code>~/.claude/CLAUDE.md</code></td>
+            <td class="oc-cell"><code>~/.config/opencode/AGENTS.md</code></td>
+          </tr>
+          <tr>
+            <td>Global commands</td>
+            <td class="cc-cell"><code>~/.claude/commands/</code></td>
+            <td class="oc-cell"><code>~/.config/opencode/commands/</code></td>
+          </tr>
+          <tr>
+            <td>Global agents</td>
+            <td class="cc-cell"><code>~/.claude/agents/</code></td>
+            <td class="oc-cell"><code>~/.config/opencode/agents/</code></td>
+          </tr>
+          <tr>
+            <td>Auth / tokens</td>
+            <td class="cc-cell"><code>~/.claude/</code> (internal)</td>
+            <td class="oc-cell"><code>~/.local/share/opencode/auth.json</code></td>
+          </tr>
+          <tr>
+            <td>Session data</td>
+            <td class="cc-cell"><code>~/.claude/projects/</code></td>
+            <td class="oc-cell"><code>~/.local/share/opencode/storage/</code></td>
+          </tr>
+          <tr>
+            <td>Plugins / packages</td>
+            <td class="cc-cell">N/A</td>
+            <td class="oc-cell"><code>~/.config/opencode/node_modules/</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        <strong>macOS paths:</strong> Claude Code uses <code>~/.claude/</code> on all platforms. OpenCode uses <code>~/.config/opencode/</code> on Linux, <code>~/Library/Application Support/opencode/</code> on macOS, and <code>%APPDATA%\opencode\</code> on Windows — following OS conventions.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Project Structure Side-by-Side ═══ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="emoji">📂</span>
+      <h2>Project Directory Structure — Side by Side</h2>
+    </div>
+    <div class="section-body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0;">
+        <div style="padding: 20px; border-right: 1px solid var(--border);">
+          <div class="code-label" style="color: var(--cc); font-weight: 600;">Claude Code</div>
+          <div class="code-block">my-project/
+├── .claude/
+│   ├── settings.json          ← shared config
+│   ├── settings.local.json    ← personal config
+│   ├── CLAUDE.local.md        ← personal rules
+│   ├── commands/
+│   │   ├── deploy.md
+│   │   └── test.md
+│   ├── agents/
+│   │   └── reviewer.md
+│   ├── rules/
+│   │   └── style.md
+│   └── skills/
+│       └── db-migration.md
+├── .mcp.json                  ← MCP servers
+├── CLAUDE.md                  ← project rules
+└── ...</div>
+        </div>
+        <div style="padding: 20px;">
+          <div class="code-label" style="color: var(--oc); font-weight: 600;">OpenCode</div>
+          <div class="code-block">my-project/
+├── .opencode/
+│   ├── opencode.json          ← personal config
+│   ├── AGENTS.md              ← personal rules
+│   ├── commands/
+│   │   ├── deploy.md
+│   │   └── test.md
+│   ├── agents/
+│   │   └── reviewer.md
+│   └── skills/
+│       └── db-migration.md
+├── opencode.json              ← shared config
+│                                 (includes MCP!)
+├── AGENTS.md                  ← project rules
+│                                 (or CLAUDE.md)
+└── ...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Built for the data team transition from Claude Code → OpenCode</p>
+    <p>OpenCode docs: <a href="https://opencode.ai/docs">opencode.ai/docs</a> · Claude Code docs: <a href="https://code.claude.com/docs">code.claude.com/docs</a></p>
+  </div>
+
+</div>
+</body>
+</html>
